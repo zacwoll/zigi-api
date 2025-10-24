@@ -4,10 +4,9 @@ import { z } from "zod";
 
 export type AppContext = Context<{ Bindings: Env }>;
 
-export const Task = z.object({
-	name: Str({ example: "lorem" }),
-	slug: Str(),
-	description: Str({ required: false }),
-	completed: z.boolean().default(false),
-	due_date: DateTime(),
+export const UserModel = z.object({
+  id: z.string().uuid(),
+  username: z.string(),
+  balance: z.number().int(),
+  created_at: z.string().datetime(),
 });

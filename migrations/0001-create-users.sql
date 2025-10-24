@@ -1,0 +1,6 @@
+CREATE TABLE users (
+    id TEXT PRIMARY KEY,
+	username TEXT NOT NULL,
+	balance INTEGER DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
