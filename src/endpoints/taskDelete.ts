@@ -1,19 +1,19 @@
 import { OpenAPIRoute, contentJson, Str, Bool } from "chanfana";
 import { z } from "zod";
-import { type AppContext, UserModel } from "../types";
+import { type AppContext } from "../types";
 
-export class UserDelete extends OpenAPIRoute {
+export class TaskDelete extends OpenAPIRoute {
   schema = {
-    tags: ["Users"],
-    summary: "Delete a User by ID",
+    tags: ["Tasks"],
+    summary: "Delete a Task by ID",
     request: {
       params: z.object({
-        id: Str({ description: "User ID (UUID)" }),
+        task_id: Str({ description: "Task ID (UUID)" }),
       }),
     },
     responses: {
       "200": {
-        description: "Returns if the user was deleted successfully",
+        description: "Returns if the task was deleted successfully",
         ...contentJson(
           z.object({
             success: Bool(),
@@ -27,23 +27,24 @@ export class UserDelete extends OpenAPIRoute {
   async handle(c: AppContext) {
     // Get validated parameters
     const data = await this.getValidatedData<typeof this.schema>();
-    const id = data.params.id;
+    const id = data.params.task_id;
 
     // Attempt to delete the user
-    const result = await c.env.prod_zigi_api.prepare("DELETE FROM users WHERE id = ?")
+    const result = await c.env.prod_zigi_api
+      .prepare("DELETE FROM tasks WHERE id = ?")
       .bind(id)
       .run();
 
     if (result.success && result.meta.changes > 0) {
       return {
         success: true,
-        message: `User with id ${id} deleted successfully.`,
+        message: `Task with id ${id} deleted successfully.`,
       };
     }
 
     return {
       success: false,
-      message: `User with id ${id} not found.`,
+      message: `Task with id ${id} not found.`,
     };
   }
 }

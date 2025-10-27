@@ -1,11 +1,11 @@
 import { contentJson, OpenAPIRoute } from "chanfana";
 import { z } from "zod";
-import { type AppContext, UserModel } from "../types";
+import { type AppContext, UserModel, TaskModel } from "../types";
 
-export class UserFetch extends OpenAPIRoute {
+export class TaskList extends OpenAPIRoute {
   schema = {
-    tags: ["Users"],
-    summary: "Fetch User information",
+    tags: ["Tasks"],
+    summary: "List Tasks by User Id",
     request: {
       params: z.object({
         id: z.string(),
@@ -13,11 +13,11 @@ export class UserFetch extends OpenAPIRoute {
     },
     responses: {
       "200": {
-        description: "Returns user and their balances with Zigi",
+        description: "Returns all users and their balances with Zigi",
         ...contentJson(
           z.object({
             status: z.string().default("success"),
-            user: UserModel,
+            tasks: z.array(TaskModel),
           }),
         ),
       },
@@ -37,16 +37,20 @@ export class UserFetch extends OpenAPIRoute {
     const data = await this.getValidatedData<typeof this.schema>();
     const userId = data.params.id;
 
-    const user = await c.env.prod_zigi_api
+    // Query D1 for all tasks belonging to the user
+    const { results } = await c.env.prod_zigi_api
       .prepare(
-        "SELECT id, username, balance, created_at FROM users WHERE id = ?",
+        `SELECT id, user_id, title, description, success_points, failure_points, status, created_at, completed_at
+       FROM tasks
+       WHERE user_id = ?
+       ORDER BY created_at DESC`,
       )
       .bind(userId)
-      .first<typeof UserModel>();
+      .all<typeof TaskModel>();
 
     return {
       success: true,
-      user,
+      tasks: results,
     };
   }
 }

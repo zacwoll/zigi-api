@@ -1,11 +1,11 @@
 import { contentJson, OpenAPIRoute } from "chanfana";
 import { z } from "zod";
-import { type AppContext, UserModel } from "../types";
+import { type AppContext, UserModel, TaskModel } from "../types";
 
-export class UserList extends OpenAPIRoute {
+export class TaskListAll extends OpenAPIRoute {
   schema = {
-    tags: ["Users"],
-    summary: "List Users",
+    tags: ["Tasks"],
+    summary: "List All Tasks",
     request: {},
     responses: {
       "200": {
@@ -13,7 +13,7 @@ export class UserList extends OpenAPIRoute {
         ...contentJson(
           z.object({
             status: z.string().default("success"),
-			      users: z.array(UserModel),
+            tasks: z.array(TaskModel),
           }),
         ),
       },
@@ -30,14 +30,18 @@ export class UserList extends OpenAPIRoute {
   };
 
   async handle(c: AppContext) {
-    // Query D1 for all users
-    const { results } = await c.env.prod_zigi_api.prepare(
-      "SELECT id, username, balance, created_at FROM users ORDER BY created_at DESC",
-    ).all<typeof UserModel>();
+    // Query D1 for all tasks belonging to the user
+    const { results } = await c.env.prod_zigi_api
+      .prepare(
+        `SELECT id, user_id, title, description, success_points, failure_points, status, created_at, completed_at
+       FROM tasks
+       ORDER BY created_at DESC`,
+      )
+      .all<typeof TaskModel>();
 
     return {
       success: true,
-      users: results,
+      tasks: results,
     };
   }
 }
