@@ -13,7 +13,7 @@ export class UserFetch extends OpenAPIRoute {
         ...contentJson(
           z.object({
             status: z.string().default("success"),
-            user: z.array(UserModel),
+            user: UserModel,
           }),
         ),
       },
@@ -30,16 +30,17 @@ export class UserFetch extends OpenAPIRoute {
   };
 
   async handle(c: AppContext) {
-    // Query D1 for all users
-    const { results } = await c.env.prod_zigi_api
-      .prepare(
-        "SELECT id, username, balance, created_at FROM users ORDER BY created_at DESC",
-      )
-      .all<typeof UserModel>();
+  const userId = c.req.param("id");
+
+  const user = await c.env.prod_zigi_api
+    .prepare("SELECT id, username, balance, created_at FROM users WHERE id = ?")
+    .bind(userId)
+    .first<typeof UserModel>();
+
 
     return {
       success: true,
-      user: results,
+      user,
     };
   }
 }

@@ -7,7 +7,7 @@ export class UserDelete extends OpenAPIRoute {
     summary: "Delete a User by ID",
     request: {
       params: z.object({
-        userId: Str({ description: "User ID (UUID)" }),
+        id: Str({ description: "User ID (UUID)" }),
       }),
     },
     responses: {
@@ -26,23 +26,23 @@ export class UserDelete extends OpenAPIRoute {
   async handle(c: AppContext) {
     // Get validated parameters
     const data = await this.getValidatedData<typeof this.schema>();
-    const { userId } = data.params;
+    const { id } = data.params;
 
     // Attempt to delete the user
     const result = await c.env.prod_zigi_api.prepare("DELETE FROM users WHERE id = ?")
-      .bind(userId)
+      .bind(id)
       .run();
 
     if (result.success && result.meta.changes > 0) {
       return {
         success: true,
-        message: `User with id ${userId} deleted successfully.`,
+        message: `User with id ${id} deleted successfully.`,
       };
     }
 
     return {
       success: false,
-      message: `User with id ${userId} not found.`,
+      message: `User with id ${id} not found.`,
     };
   }
 }

@@ -15,7 +15,6 @@
 			"binding": "prod_zigi_api",
 			"database_name": "prod-zigi-api",
 			"database_id": "dd19aa27-0a71-4e03-ae07-440ed9f4ea1d",
-			"remote": true
 		}
 	]
 	/**

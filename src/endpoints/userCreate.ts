@@ -46,12 +46,20 @@ export class UserCreate extends OpenAPIRoute {
     const data = await this.getValidatedData<typeof this.schema>();
     const { username } = data.body;
 
-	const newUser = {
-		id: crypto.randomUUID(),
-		username,
-		balance: 0,
-		createdAt: new Date().toISOString(),
-	}
+    const newUser = {
+      id: crypto.randomUUID(),
+      username,
+      balance: 0,
+      createdAt: new Date().toISOString(),
+    };
+
+    // Insert into D1 database
+    await c.env.prod_zigi_api
+      .prepare(
+        "INSERT INTO users (id, username, balance, created_at) VALUES (?, ?, ?, ?)",
+      )
+      .bind(newUser.id, newUser.username, newUser.balance, newUser.createdAt)
+      .run();
 
     // Return the new user
     return { success: true, user: newUser };

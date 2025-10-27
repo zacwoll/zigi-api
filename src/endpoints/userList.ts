@@ -13,7 +13,7 @@ export class UserList extends OpenAPIRoute {
         ...contentJson(
           z.object({
             status: z.string().default("success"),
-			users: z.array(UserModel),
+			      users: z.array(UserModel),
           }),
         ),
       },
@@ -34,6 +34,8 @@ export class UserList extends OpenAPIRoute {
     const { results } = await c.env.prod_zigi_api.prepare(
       "SELECT id, username, balance, created_at FROM users ORDER BY created_at DESC",
     ).all<typeof UserModel>();
+
+    console.log(results);
 
     return {
       success: true,
