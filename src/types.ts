@@ -42,3 +42,11 @@ export const TransactionModel = z.object({
   related_task_id: z.string().uuid().nullable().optional(),
   timestamp: z.string().datetime(),
 });
+
+export const TaskStatusEnum = z.enum([
+  "pending",
+  "in-progress",
+  "completed",
+  "failed",
+  "expired",
+]);

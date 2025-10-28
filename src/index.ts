@@ -8,6 +8,7 @@ import { TaskCreate } from "./endpoints/taskCreate";
 import { TaskList } from "./endpoints/taskList";
 import { TaskListAll } from "./endpoints/taskListAll";
 import { TaskDelete } from "./endpoints/taskDelete";
+import { TaskUpdate } from "./endpoints/taskUpdate";
 
 export interface Env {
 	prod_zigi_api: D1Database
@@ -34,6 +35,7 @@ openapi.get("/tasks", TaskListAll);
 openapi.get("/tasks/:id", TaskList);
 openapi.post("/tasks", TaskCreate);
 openapi.delete("/tasks/:task_id", TaskDelete)
+openapi.patch("/tasks/:task_id", TaskUpdate);
 
 // You may also register routes for non OpenAPI directly on Hono
 // app.get('/test', (c) => c.text('Hono!'))

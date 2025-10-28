@@ -2,13 +2,6 @@ import { contentJson, OpenAPIRoute } from "chanfana";
 import { z } from "zod";
 import { type AppContext } from "../types";
 
-export const UserModel = z.object({
-	id: z.string().uuid(),
-	username: z.string(),
-	balance: z.number().int(),
-	created_at: z.string().datetime(),
-})
-
 export class UserCreate extends OpenAPIRoute {
 	schema = {
 		tags: ["Users"],

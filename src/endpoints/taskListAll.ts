@@ -1,6 +1,6 @@
 import { contentJson, OpenAPIRoute } from "chanfana";
 import { z } from "zod";
-import { type AppContext, UserModel, TaskModel } from "../types";
+import { type AppContext, TaskModel } from "../types";
 
 export class TaskListAll extends OpenAPIRoute {
   schema = {
