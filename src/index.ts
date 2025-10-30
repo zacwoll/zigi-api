@@ -10,6 +10,7 @@ import { TaskListAll } from "./endpoints/taskListAll";
 import { TaskDelete } from "./endpoints/taskDelete";
 import { TaskUpdate } from "./endpoints/taskUpdate";
 import { TransactionListAll } from "./endpoints/transactionListAll";
+import { UserBalanceAdjustment } from "./endpoints/userBalanceAdjustment";
 
 export interface Env {
 	prod_zigi_api: D1Database
@@ -30,6 +31,7 @@ openapi.get("/users", UserList);
 openapi.post("/users", UserCreate);
 openapi.get("/users/:id", UserFetch);
 openapi.delete("/users/:id", UserDelete);
+openapi.post("/user/:id/adjustment", UserBalanceAdjustment)
 
 // Task Endpoints
 openapi.get("/tasks", TaskListAll);
