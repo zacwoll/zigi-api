@@ -1,6 +1,6 @@
 import { contentJson, OpenAPIRoute } from "chanfana";
 import { z } from "zod";
-import { SubtaskModel, TaskModel, type AppContext } from "../types";
+import { SubtaskUserEntryModel, TaskModel, type AppContext } from "../types";
 
 export class TaskCreate extends OpenAPIRoute {
   schema = {
@@ -14,7 +14,8 @@ export class TaskCreate extends OpenAPIRoute {
           description: z.string().nullable().optional(),
           success_points: z.number().int(),
           failure_points: z.number().int(),
-          subtasks: z.array(SubtaskModel).optional(),
+          expires_at: z.string().datetime().optional(),
+          subtasks: z.array(SubtaskUserEntryModel).optional(),
         }),
       ),
     },
@@ -35,6 +36,7 @@ export class TaskCreate extends OpenAPIRoute {
       success_points,
       failure_points,
       subtasks = [],
+      expires_at,
     } = data.body;
 
     const task_id = crypto.randomUUID();
@@ -44,10 +46,10 @@ export class TaskCreate extends OpenAPIRoute {
     const db = c.env.prod_zigi_api;
 
     // Insert Task
-    await db
+    const insertTask = await db
       .prepare(
-        `INSERT INTO tasks (id, user_id, title, description, success_points, failure_points, status, created_at)
-			 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO tasks (id, user_id, title, description, success_points, failure_points, status, created_at, expires_at)
+			 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .bind(
         task_id,
@@ -58,16 +60,23 @@ export class TaskCreate extends OpenAPIRoute {
         failure_points,
         status,
         created_at,
+        expires_at ?? null,
       )
       .run();
+
+    if (insertTask.error) {
+      throw new Error(insertTask.error);
+    }
+
+    console.log("inserted task into table");
 
     // Insert Subtasks (if any)
     for (const subtask of subtasks) {
       const subtask_id = crypto.randomUUID();
       await db
         .prepare(
-          `INSERT INTO subtasks (id, task_id, title, description, success_points, failure_points, status)
-				 VALUES (?, ?, ?, ?, ?, ?, ?)`,
+          `INSERT INTO subtasks (id, task_id, title, description, success_points, failure_points, status, expires_at)
+				 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
         )
         .bind(
           subtask_id,
@@ -76,7 +85,8 @@ export class TaskCreate extends OpenAPIRoute {
           subtask.description ?? null,
           subtask.success_points,
           subtask.failure_points,
-		  status
+          status,
+          subtask.expires_at ?? null,
         )
         .run();
     }
@@ -90,6 +100,7 @@ export class TaskCreate extends OpenAPIRoute {
       failure_points,
       status,
       created_at,
+      expires_at,
       subtasks,
     };
   }

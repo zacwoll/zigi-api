@@ -29,9 +29,27 @@ export class UserDelete extends OpenAPIRoute {
     const data = await this.getValidatedData<typeof this.schema>();
     const id = data.params.id;
 
-    // Attempt to delete the user
-    const result = await c.env.prod_zigi_api.prepare("DELETE FROM users WHERE id = ?")
+    // Fetch the user
+    const user = await c.env.prod_zigi_api
+      .prepare("SELECT deleted_at FROM users WHERE id = ?")
       .bind(id)
+      .first();
+
+    if (!user || user.deleted_at) {
+      throw new Error("User not found");
+    }
+    const timestamp = new Date().toISOString();
+
+    // Attempt to delete the user
+    const result = await c.env.prod_zigi_api
+      .prepare(
+        `
+      UPDATE users
+      SET deleted_at = ?
+      WHERE id = ?
+    `,
+      )
+      .bind(timestamp, id)
       .run();
 
     if (result.success && result.meta.changes > 0) {

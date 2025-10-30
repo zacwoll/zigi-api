@@ -9,6 +9,7 @@ export const UserModel = z.object({
   username: z.string(),
   balance: z.number().int(),
   created_at: z.string().datetime(),
+  deleted_at: z.string().datetime().nullable()
 });
 
 export const TaskModel = z.object({
@@ -21,6 +22,7 @@ export const TaskModel = z.object({
   status: z.enum(["pending", "in-progress", "completed", "failed", "expired"]),
   created_at: z.string().datetime(),
   completed_at: z.string().datetime().nullable().optional(),
+  expires_at: z.string().datetime().nullable().optional()
 });
 
 export const SubtaskModel = z.object({
@@ -32,6 +34,15 @@ export const SubtaskModel = z.object({
   failure_points: z.number().int(),
   status: z.enum(["pending", "in-progress", "completed", "failed", "expired"]),
   completed_at: z.string().datetime().nullable().optional(),
+  expires_at: z.string().datetime().nullable().optional()
+});
+
+export const SubtaskUserEntryModel = z.object({
+  title: z.string(),
+  description: z.string().nullable().optional(),
+  success_points: z.number().int(),
+  failure_points: z.number().int(),
+  expires_at: z.string().datetime().optional(),
 });
 
 export const TransactionModel = z.object({

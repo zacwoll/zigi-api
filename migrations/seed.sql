@@ -1,3 +1,16 @@
+DROP TABLE IF EXISTS transactions;
+DROP TABLE IF EXISTS subtasks;
+DROP TABLE IF EXISTS tasks;
+DROP TABLE IF EXISTS users;
+
+CREATE TABLE users (
+    id TEXT PRIMARY KEY,
+	username TEXT NOT NULL,
+	balance INTEGER DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+	deleted_at DATETIME
+);
+
 -- Table: tasks
 CREATE TABLE tasks (
     id TEXT PRIMARY KEY,                      -- UUID

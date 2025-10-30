@@ -1,19 +1,19 @@
 import { contentJson, OpenAPIRoute } from "chanfana";
 import { z } from "zod";
-import { type AppContext, TaskModel } from "../types";
+import { type AppContext, TaskModel, TransactionModel } from "../types";
 
-export class TaskListAll extends OpenAPIRoute {
+export class TransactionListAll extends OpenAPIRoute {
   schema = {
-    tags: ["Tasks"],
-    summary: "List All Tasks",
+    tags: ["Transactions"],
+    summary: "List All Transactions",
     request: {},
     responses: {
       "200": {
-        description: "Returns all users and their balances with Zigi",
+        description: "Returns all transactions made with Zigi",
         ...contentJson(
           z.object({
             status: z.string().default("success"),
-            tasks: z.array(TaskModel),
+            transactions: z.array(TransactionModel),
           }),
         ),
       },
@@ -32,16 +32,16 @@ export class TaskListAll extends OpenAPIRoute {
   async handle(c: AppContext) {
     // Query D1 for all tasks belonging to the user
     const { results } = await c.env.prod_zigi_api
-      .prepare(
-        `SELECT id, user_id, title, description, success_points, failure_points, status, created_at, completed_at, expires_at
-       FROM tasks
-       ORDER BY created_at DESC`,
-      )
-      .all<typeof TaskModel>();
+      .prepare(`
+		SELECT id, user_id, amount, reason, related_task_id, timestamp
+		FROM transactions
+		ORDER BY timestamp DESC
+	`,)
+      .all<typeof TransactionModel>();
 
     return {
       success: true,
-      tasks: results,
+      transactions: results,
     };
   }
 }
