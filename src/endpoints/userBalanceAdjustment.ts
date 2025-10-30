@@ -42,11 +42,12 @@ export class UserBalanceAdjustment extends OpenAPIRoute {
   async handle(c: AppContext) {
     const data = await this.getValidatedData<typeof this.schema>();
     const user_id = data.params.id;
-	const { amount, reason } = data.body;
+    const { amount, reason } = data.body;
 
-	// Get user Account
+    // Get user Account
     const getUser = await c.env.prod_zigi_api
-      .prepare(`
+      .prepare(
+        `
 		SELECT id, username, balance, created_at, deleted_at
 		FROM users
 		WHERE id = ?
@@ -54,24 +55,37 @@ export class UserBalanceAdjustment extends OpenAPIRoute {
       )
       .bind(user_id)
       .first<typeof UserModel>();
-	const user = UserModel.parse(getUser);
-	if (!user || user.deleted_at) {
-		throw new Error("User not Found");
-	}
+    const user = UserModel.parse(getUser);
+    if (!user || user.deleted_at) {
+      throw new Error("User not Found");
+    }
 
-	// Apply Transaction to User Account
-	const tx_data: TransactionData = {
-		user_id,
-		amount,
-		reason,
-	};
-	const applied = await writeTransaction(c.env, tx_data);
-	console.log(applied);
+    // Apply Transaction to User Account
+    const tx_data: TransactionData = {
+      user_id,
+      amount,
+      reason,
+    };
+    const applied = await writeTransaction(c.env, tx_data);
+    console.log(applied);
+
+    // Get updated user Account
+    const getUpdatedUser = await c.env.prod_zigi_api
+      .prepare(
+        `
+		SELECT id, username, balance, created_at, deleted_at
+		FROM users
+		WHERE id = ?
+		`,
+      )
+      .bind(user_id)
+      .first<typeof UserModel>();
+	const updatedUser = UserModel.parse(getUser);
 
 
     return {
       success: true,
-      user,
+      updatedUser,
     };
   }
 }
