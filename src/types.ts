@@ -12,18 +12,6 @@ export const UserModel = z.object({
   deleted_at: z.string().datetime().nullable()
 });
 
-export const TaskModel = z.object({
-  id: z.string().uuid(),
-  user_id: z.string().uuid(),
-  title: z.string(),
-  description: z.string().nullable().optional(),
-  success_points: z.number().int(),
-  failure_points: z.number().int(),
-  status: z.enum(["pending", "in-progress", "completed", "failed", "expired"]),
-  created_at: z.string().datetime(),
-  completed_at: z.string().datetime().nullable().optional(),
-  expires_at: z.string().datetime().nullable().optional()
-});
 
 export const SubtaskModel = z.object({
   id: z.string().uuid(),
@@ -35,6 +23,20 @@ export const SubtaskModel = z.object({
   status: z.enum(["pending", "in-progress", "completed", "failed", "expired"]),
   completed_at: z.string().datetime().nullable().optional(),
   expires_at: z.string().datetime().nullable().optional()
+});
+
+export const TaskModel = z.object({
+  id: z.string().uuid(),
+  user_id: z.string().uuid(),
+  title: z.string(),
+  description: z.string().nullable().optional(),
+  success_points: z.number().int(),
+  failure_points: z.number().int(),
+  status: z.enum(["pending", "in-progress", "completed", "failed", "expired"]),
+  created_at: z.string().datetime(),
+  completed_at: z.string().datetime().nullable().optional(),
+  expires_at: z.string().datetime().nullable().optional(),
+  subtasks: z.array(SubtaskModel).optional(),
 });
 
 export const SubtaskUserEntryModel = z.object({
