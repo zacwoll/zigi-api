@@ -11,6 +11,7 @@ import { TaskDelete } from "./endpoints/taskDelete";
 import { TaskUpdate } from "./endpoints/taskUpdate";
 import { TransactionListAll } from "./endpoints/transactionListAll";
 import { UserBalanceAdjustment } from "./endpoints/userBalanceAdjustment";
+import { SubtaskUpdate } from "./endpoints/subtaskUpdate";
 
 export interface Env {
 	prod_zigi_api: D1Database
@@ -39,6 +40,7 @@ openapi.get("/tasks/:id", TaskList);
 openapi.post("/tasks", TaskCreate);
 openapi.delete("/tasks/:task_id", TaskDelete)
 openapi.patch("/tasks/:task_id", TaskUpdate);
+openapi.patch("/tasks/:task_id/:subtask_id", SubtaskUpdate);
 
 // Transaction Endpoint
 openapi.get("/transactions", TransactionListAll);
@@ -51,27 +53,33 @@ openapi.get("/transactions", TransactionListAll);
 
 async function expireTasks(env: Env) {
 	try {
-		const now = new Date().toISOString();
-		const expireSubtasks = await env.prod_zigi_api.prepare(`
+		// Set completed_at
+		const completed_at = new Date().toISOString();
+		const expireSubtasks = await env.prod_zigi_api
+      .prepare(
+        `
 		  UPDATE subtasks
-		  SET status = 'expired'
+		  SET status = 'expired',
+			completed_at = ?
 		  WHERE expires_at IS NOT NULL
 			AND expires_at < ?
-			AND status NOT IN ('expired', 'complete', 'failed');
-		`)
-		.bind(now)
-		.run();
+			AND status NOT IN ('expired', 'completed', 'failed');
+		`,
+      )
+      .bind(completed_at, completed_at)
+      .run();
 		// Now run the expiration transaction on the subtasks
 		console.log("Expired subtasks updated", expireSubtasks);
 
 		const expireTasks = await env.prod_zigi_api.prepare(`
 		  UPDATE tasks
-		  SET status = 'expired'
+		  SET status = 'expired',
+			completed_at = ?
 		  WHERE expires_at IS NOT NULL
 			AND expires_at < ?
-			AND status NOT IN ('expired', 'complete', 'failed');
+			AND status NOT IN ('expired', 'completed', 'failed');
 		`)
-		.bind(now)
+		.bind(completed_at, completed_at)
 		.run();
 		// now run the expiration transaction on the tasks
 		console.log("Expired tasks updated", expireTasks);

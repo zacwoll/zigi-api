@@ -1,3 +1,5 @@
+import { UserModel } from "./types";
+
 export interface TransactionData {
   user_id: string;
   amount: number;
@@ -33,15 +35,18 @@ export async function writeTransaction(env: Env, data: TransactionData) {
 	const applyTransaction = await env.prod_zigi_api.prepare(`
 		UPDATE users
 		SET balance = balance + ?
-		WHERE id = ?;
+		WHERE id = ?
+		RETURNING balance
     `,
     )
 	.bind(amount, user_id)
-	.run();
+	.first();
 
 	console.log(applyTransaction);
+	const user = UserModel.parse(applyTransaction);
+	const new_balance = user.balance;
 
-	console.log(`Transaction applied to ${user_id}`);
+	console.log(`Transaction applied to ${user_id}, new balance is ${new_balance}`);
 
-	return applyTransaction;
+	return user;
 }

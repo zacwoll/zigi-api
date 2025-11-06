@@ -4,6 +4,14 @@ import { z } from "zod";
 
 export type AppContext = Context<{ Bindings: Env }>;
 
+export const TaskStatusEnum = z.enum([
+  "pending",
+  "in-progress",
+  "completed",
+  "failed",
+  "expired",
+]);
+
 export const UserModel = z.object({
   id: z.string().uuid(),
   username: z.string(),
@@ -11,7 +19,6 @@ export const UserModel = z.object({
   created_at: z.string().datetime(),
   deleted_at: z.string().datetime().nullable()
 });
-
 
 export const SubtaskModel = z.object({
   id: z.string().uuid(),
@@ -56,10 +63,3 @@ export const TransactionModel = z.object({
   timestamp: z.string().datetime(),
 });
 
-export const TaskStatusEnum = z.enum([
-  "pending",
-  "in-progress",
-  "completed",
-  "failed",
-  "expired",
-]);

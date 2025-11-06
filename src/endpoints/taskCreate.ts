@@ -68,7 +68,9 @@ export class TaskCreate extends OpenAPIRoute {
       throw new Error(insertTask.error);
     }
 
-    console.log("inserted task into table");
+    const inserted_task = TaskModel.parse(insertTask);
+
+    console.log(inserted_task);
 
     // Insert Subtasks (if any)
     for (const subtask of subtasks) {

@@ -7,6 +7,7 @@ import {
   SubtaskModel,
 } from "../types";
 import { TransactionData, writeTransaction } from "../transaction";
+import { isComplete } from "../utils";
 
 export class TaskUpdate extends OpenAPIRoute {
   schema = {
@@ -38,6 +39,9 @@ export class TaskUpdate extends OpenAPIRoute {
 
     const db = c.env.prod_zigi_api;
 
+    // Set the completed_at time
+    const completed_at = new Date().toISOString();
+    
     try {
       console.log(`looking for task ${task_id}`);
       // Check if the task is found
@@ -55,7 +59,7 @@ export class TaskUpdate extends OpenAPIRoute {
       const result = await db.prepare(`
         SELECT * FROM subtasks
         WHERE task_id = ?
-      `)
+      `,)
         .bind(task_id)
         .all();
 
@@ -66,14 +70,20 @@ export class TaskUpdate extends OpenAPIRoute {
       if (status === "completed") {
         // set all the currently in-progress subtasks to completed
         for (const subtask of subtasks) {
-          if (subtask.status === "in-progress") {
+          if (
+            subtask.status === "in-progress" ||
+            subtask.status === "pending"
+          ) {
             // set all in-progress tasks to complete
             await db
-              .prepare(`
+              .prepare(
+                `
                 UPDATE subtasks
-                SET status = ?
+                SET status = ?,
+                  completed_at = ?
                 WHERE id = ?
-              `)
+              `,
+              )
               .bind(status, subtask.id)
               .run();
 
@@ -91,7 +101,6 @@ export class TaskUpdate extends OpenAPIRoute {
         console.log("all sub tasks completed");
 
         // Set the task to complete
-        const completed_at = new Date().toISOString();
         const completedTask = await db
           .prepare(
             `
@@ -113,42 +122,65 @@ export class TaskUpdate extends OpenAPIRoute {
         const applied = await writeTransaction(c.env, data);
         console.log(applied);
       } else if (status === "failed" || status === "expired") {
-        // set all the currently in-progress subtasks to failed
+        // set all the currently in-progress subtasks to failed or expired
         for (const subtask of subtasks) {
-          if (
-            subtask.status === "pending" ||
-            subtask.status === "in-progress"
-          ) {
+          // if subtask is incomplete, it's status can be mutated
+          if (!isComplete(subtask.status)) {
             // set all in-progress tasks to failed
-            await db
-              .prepare("UPDATE subtasks SET status = ? WHERE id = ?")
-              .bind(status, subtask.id)
-              .run();
+            const updatedSubtask = await db
+              .prepare(
+                `
+                UPDATE subtasks
+                SET status = ?,
+                  completed_at = ?
+                WHERE id = ?,
+                RETURNING *
+                `,
+              )
+              .bind(status, completed_at, subtask.id)
+              .first();
 
-            // execute withdrawal
-            // execute transaction
-            const data: TransactionData = {
-              user_id,
-              amount: subtask.failure_points,
-              reason: subtask.title,
-              related_task_id: task_id,
-            };
-            const applied = await writeTransaction(c.env, data);
-            console.log(applied);
+            const db_record = SubtaskModel.parse(updatedSubtask);
+            console.log(db_record);
+
+            if (!db_record) {
+              console.error("Subtask cannot be updated");
+            } else {
+              // execute failure transaction
+              const data: TransactionData = {
+                user_id,
+                amount: subtask.failure_points,
+                reason: subtask.title,
+                related_task_id: task_id,
+              };
+              const applied = await writeTransaction(c.env, data);
+              console.log(applied);
+            }
           }
         }
 
         // Set the task to failed or expired
-        const completedTask = await db
+        const tryCompleteTask = await db
           .prepare(
             `
           UPDATE tasks
-          SET status = ?
-          WHERE id = ?
+          SET status = ?,
+            completed_at = ?
+          WHERE id = ?,
+          RETURNING *
         `,
           )
           .bind(status, task_id)
           .run();
+
+        const completedTask = TaskModel.parse(tryCompleteTask);
+
+        if (!completedTask) {
+          return new Response(
+            JSON.stringify({ error: "Task cannot be updated" }),
+            { status: 400 },
+          );
+        }
 
         // execute failure transaction
         const data: TransactionData = {
@@ -159,6 +191,12 @@ export class TaskUpdate extends OpenAPIRoute {
         };
         const applied = await writeTransaction(c.env, data);
         console.log(applied);
+        // TODO: get the return of applied and return the new balance to the API
+
+        return {
+          success: true,
+          completedTask
+        };
       } else {
         // other option is changing pending->in-progress,
         // possible future option is pending/in-progress->cancelled or some other state change
@@ -167,7 +205,8 @@ export class TaskUpdate extends OpenAPIRoute {
           .prepare(
             `
           UPDATE tasks
-          SET status = ?
+          SET status = ?,
+            completed_at = ?
           WHERE id = ?
         `,
           )
@@ -175,13 +214,17 @@ export class TaskUpdate extends OpenAPIRoute {
           .run();
 
         for (const subtask of subtasks) {
-          const completedSubtask = await db.prepare(`
+          const completedSubtask = await db
+            .prepare(
+              `
             UPDATE subtasks
-            SET status = ?
+            SET status = ?,
+              completed_at = ?
             WHERE id = ?
-          `,)
-          .bind(status, subtask.id)
-          .run();
+          `,
+            )
+            .bind(status, subtask.id)
+            .run();
         }
       }
     } catch (err) {
@@ -191,7 +234,7 @@ export class TaskUpdate extends OpenAPIRoute {
 
     return {
       success: true,
-      message: `Task ${task_id} was marked as ${status}`,
+      message: `${completed_at}: Task ${task_id} was marked as ${status}`,
     };
   }
 }
